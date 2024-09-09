@@ -1,12 +1,8 @@
 #include <iostream>
 #include <string>
-
+#include "BankAccount.h"
 using namespace std;
 
-constexpr unsigned int MIN_ACCOUNT_NUMBER = 10000000;
-constexpr unsigned int MAX_ACCOUNT_NUMBER = 99999999;
-constexpr unsigned int MIN_NAME_LEN = 3;
-constexpr unsigned int MAX_NAME_LEN = 30;
 constexpr float BONUS = 0.1;
 constexpr float TAX = 0.1;
 constexpr short int EXIT = 6;
@@ -15,78 +11,6 @@ constexpr short int CUSTOMER = 1;
 constexpr short int EMPLOYEE = 2;
 constexpr short int MIN_CHOICE = 1;
 constexpr short int MAX_CHOICE = 6;
-
-const string ACTIVE = "Active";
-const string FROZEN = "Frozen";
-
-struct BankAccount {
-private:
-    string name;
-    unsigned int accountNumber = 0;
-    string status = ACTIVE;
-    double balance = 0;
-
-public:
-    string getName() {
-        return name;
-    }
-
-    double getBalance() const {
-        return balance;
-    }
-
-    void setName(const string& newName) {
-        if (newName.length() < MIN_NAME_LEN || newName.length() > MAX_NAME_LEN )
-            throw invalid_argument( "Name length has to be between " + to_string(MIN_NAME_LEN) + " and " +
-                to_string(MAX_NAME_LEN));
-
-        name = newName;
-    }
-
-    void setAccountNumber(const unsigned int newAccountNumber) {
-        if (newAccountNumber < MIN_ACCOUNT_NUMBER || newAccountNumber > MAX_ACCOUNT_NUMBER)
-            throw invalid_argument(to_string(newAccountNumber) + "is not a valid Account number");
-
-        accountNumber = newAccountNumber;
-    }
-
-    string getStatus() {
-        return status;
-    }
-
-    bool isActive() const {
-        return status == ACTIVE;
-    }
-
-    bool exists() const {
-        return accountNumber != 0;
-    }
-
-    bool addBalance(const double amount) {
-        if (status == FROZEN) return false;
-        balance += amount;
-        return true;
-    }
-
-    bool subtractBalance(const double amount) {
-        if (status == FROZEN || balance < amount) return false;
-        balance -= amount;
-        return true;
-    }
-
-    bool changeAccountStatus() {
-        if (accountNumber == 0) return false;
-
-        status = status == ACTIVE ? FROZEN : ACTIVE;
-        return true;
-    }
-
-    void print() const {
-        cout << "Account Number: " << accountNumber<< " Name: " << name
-        << " Balance: " << balance << " Status: " << status << endl;
-    }
-};
-
 
 constexpr unsigned int accountsCapacity = 10;
 BankAccount accounts[accountsCapacity];
