@@ -87,23 +87,21 @@ public:
     }
 };
 
-
-constexpr unsigned int accountsCapacity = 10;
-BankAccount accounts[accountsCapacity];
+unsigned int accountsCapacity = 4;
 unsigned int numAccounts = 0;
+auto* accounts = new BankAccount[accountsCapacity];
 
 
 void customerMenu();
 void employeeMenu();
 void roleMenu(unsigned short int &role);
 void bankAction(unsigned int role, unsigned int choice);
-void getChoice(short unsigned int &choice);
+void inputChoice(short unsigned int &choice);
 
 int main() {
     unsigned short int role, choice;
     bool run = true;
-
-    // cin.ignore(1000, '\n');
+    // cin.ignore(100  0, '\n');
     cout << "Welcome to the Bank Simulation Program!" << endl;
     roleMenu(role);
 
@@ -115,37 +113,50 @@ int main() {
             employeeMenu();
         }
 
-        getChoice(choice);
+        inputChoice(choice);
 
-        if (choice == EXIT) run = false;
-        else if (choice == ROLE_MENU) roleMenu(role);
-
-        bankAction(role, choice);
+        if (choice == EXIT)
+            run = false;
+        else if (choice == ROLE_MENU)
+            roleMenu(role);
+        else
+            bankAction(role, choice);
     }
 
     return 0;
 }
 
+void doubleCapacity() {
+    accountsCapacity *= 2;
+    auto *temp = new BankAccount[accountsCapacity];
 
-void getVar(unsigned short int &var, const string& name, const int lowerBound, const int upperBound) {
+    for (int i = 0; i < numAccounts; i++) {
+        temp[i] = accounts[i];
+    }
+    delete[] accounts;
+    accounts = temp;
+    cout << accountsCapacity;
+}
+
+void inputVar(unsigned short int &var, const string &name, const int lowerBound, const int upperBound) {
+    cin >> var;
+    while (var < lowerBound || var > upperBound) {
+        cout << "Invalid " << name <<". Enter a "<< name << " between " << lowerBound << " and " << upperBound << ":";
+        cin >> var;
+    }
+}
+void inputVar(unsigned int &var, const string &name, const int lowerBound, const int upperBound) {
     cin >> var;
     while (var < lowerBound or var > upperBound) {
         cout << "Invalid " << name <<". Enter a "<< name << " between " << lowerBound << " and " << upperBound << ":";
         cin >> var;
     }
 }
-void getVar(unsigned int &var, const string& name, const int lowerBound, const int upperBound) {
-    cin >> var;
-    while (var < lowerBound or var > upperBound) {
-        cout << "Invalid " << name <<". Enter a "<< name << " between " << lowerBound << " and " << upperBound << ":";
-        cin >> var;
-    }
-}
 
-unsigned int getAccount() {
+unsigned int findAccountIndex() {
     unsigned int accNumber;
     cout << "Please enter your Account Number:";
-    getVar(accNumber, "Account Number", MIN_ACCOUNT_NUMBER, MAX_ACCOUNT_NUMBER);
+    inputVar(accNumber, "Account Number", MIN_ACCOUNT_NUMBER, MAX_ACCOUNT_NUMBER);
     cin.ignore();
     const unsigned int i = accNumber - MIN_ACCOUNT_NUMBER;
 
@@ -154,13 +165,13 @@ unsigned int getAccount() {
     return i;
 }
 
-void getChoice(short unsigned int &choice) {
+void inputChoice(short unsigned int &choice) {
     cout << "Enter your choice:";
-    getVar(choice, "choice", MIN_CHOICE, MAX_CHOICE);
+    inputVar(choice, "choice", MIN_CHOICE, MAX_CHOICE);
     system("cls");
 }
 
-string getName() {
+string inputName() {
     string accountName;
     cout << "Enter your name (between " << MIN_NAME_LEN << " and " << MAX_NAME_LEN <<" allowed):";
     cin.ignore();
@@ -173,7 +184,7 @@ string getName() {
     return accountName;
 }
 
-double getAmount() {
+double inputAmount() {
     double amount;
     cout << "Please enter amount:";
     cin >> amount;
@@ -183,7 +194,7 @@ double getAmount() {
 
 void roleMenu(unsigned short int &role) {
     cout << "Enter your role ("<< CUSTOMER <<") for Customer, ("<< EMPLOYEE <<") for Employee:";
-    getVar(role, "choice", CUSTOMER, EMPLOYEE);
+    inputVar(role, "choice", CUSTOMER, EMPLOYEE);
     system("cls");
 }
 
@@ -199,9 +210,10 @@ void customerMenu() {
 }
 
 void openAccount() {
+    if (numAccounts >= accountsCapacity / 2) doubleCapacity();
     cout << "OPEN ACCOUNT" << endl << endl;
 
-    const string accountName = getName();
+    const string accountName = inputName();
     const unsigned int newAccNum = MIN_ACCOUNT_NUMBER + numAccounts;
 
     accounts[numAccounts].setName(accountName);
@@ -217,7 +229,7 @@ void openAccount() {
 void depositAmount() {
 
     cout << "DEPOSIT AMOUNT" << endl << endl;
-    const unsigned int i = getAccount();
+    const unsigned int i = findAccountIndex();
 
     if (i == -1) {
         cout << "Account does not exist" << endl;
@@ -229,7 +241,7 @@ void depositAmount() {
         return;
     }
 
-    const double amount = getAmount();
+    const double amount = inputAmount();
 
     accounts[i].addBalance(amount);
     cout << "Amount Deposited. Current Balance: " << accounts[i].getBalance() << endl;
@@ -237,7 +249,7 @@ void depositAmount() {
 
 void withdrawAmount() {
     cout << "WITHDRAW AMOUNT" << endl << endl;
-    const unsigned int i = getAccount();
+    const unsigned int i = findAccountIndex();
 
     if (i == -1) {
         cout << "Account does not exist, cannot deposit funds" << endl;
@@ -249,7 +261,7 @@ void withdrawAmount() {
         return;
     }
 
-    const double amount = getAmount();
+    const double amount = inputAmount();
 
     const bool success = accounts[i].subtractBalance(amount);
     if (!success)
@@ -262,7 +274,7 @@ void generateAccountStatement() {
     bool found = false;
 
     cout << "GENERATE ACCOUNT STATEMENT" << endl << endl;
-    const string accountName = getName();
+    const string accountName = inputName();
 
     for (int i=0; i<numAccounts; i++) {
         if (accounts[i].getName() == accountName) {
@@ -319,7 +331,7 @@ void addBonus() {
 
 void changeAccountStatus() {
     cout << "CHANGE ACCOUNT STATUS" << endl << endl;
-    const unsigned int i = getAccount();
+    const unsigned int i = findAccountIndex();
     if (i == -1) {
         cout << "Account does not exist, cannot change status" << endl;
         return;
