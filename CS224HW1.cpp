@@ -1,3 +1,5 @@
+// Author Abdullah Ahmed
+// 
 #include <iostream>
 #include <string>
 
@@ -19,6 +21,8 @@ constexpr short int MAX_CHOICE = 6;
 const string ACTIVE = "Active";
 const string FROZEN = "Frozen";
 
+char alphaHoles[7] = "ADOPQR";
+
 struct BankAccount {
 private:
     string name;
@@ -31,14 +35,29 @@ public:
         return name;
     }
 
+    string getStatus() {
+        return status;
+    }
+
     double getBalance() const {
         return balance;
     }
 
-    void setName(const string& newName) {
-        if (newName.length() < MIN_NAME_LEN || newName.length() > MAX_NAME_LEN )
-            throw invalid_argument( "Name length has to be between " + to_string(MIN_NAME_LEN) + " and " +
-                to_string(MAX_NAME_LEN));
+    bool isActive() const {
+        return status == ACTIVE;
+    }
+
+    bool exists() const {
+        return accountNumber != 0;
+    }
+
+    bool hasFunds(const double &amount = 0) const {
+        return amount <= balance;
+    }
+
+    void setName(const string &newName) {
+        if (newName.length() < MIN_NAME_LEN || newName.length() > MAX_NAME_LEN)
+            throw invalid_argument(newName.length() + " is not a valid name length");
 
         name = newName;
     }
@@ -50,75 +69,73 @@ public:
         accountNumber = newAccountNumber;
     }
 
-    string getStatus() {
-        return status;
+    void setAccountStatus(const string &newStatus) {
+        if (status != ACTIVE && status != FROZEN)
+            throw invalid_argument(newStatus + " is not a valid status");
+
+        status = newStatus;
     }
 
-    bool isActive() const {
-        return status == ACTIVE;
-    }
+    void deposit(const double amount) {
+        if (status == FROZEN)
+            throw runtime_error("Cannot add balance to a frozen account.");
+        if (amount < 0) {
+            throw invalid_argument("Amount: " + to_string(amount) + " cannot be deposited to a bank account");
+        }
 
-    bool exists() const {
-        return accountNumber != 0;
-    }
-
-    bool addBalance(const double amount) {
-        if (status == FROZEN) return false;
         balance += amount;
-        return true;
     }
 
-    bool subtractBalance(const double amount) {
-        if (status == FROZEN || balance < amount) return false;
+    void withdraw(const double amount) {
+        if (status == FROZEN)
+            throw runtime_error("Cannot subtract balance from a frozen account.");
+        if (amount < 0) {
+            throw invalid_argument("Amount: " + to_string(amount) + " cannot be withdrawn from a bank account");
+        }
+
         balance -= amount;
-        return true;
     }
 
-    bool changeAccountStatus() {
-        if (accountNumber == 0) return false;
-
-        status = status == ACTIVE ? FROZEN : ACTIVE;
-        return true;
-    }
 
     void print() const {
-        cout << "Account Number: " << accountNumber<< " Name: " << name
-        << " Balance: " << balance << " Status: " << status << endl;
+        cout << "Account Number: " << accountNumber << " Name: " << name
+                << " Balance: " << balance << " Status: " << status << endl;
     }
 };
 
 unsigned int accountsCapacity = 4;
 unsigned int numAccounts = 0;
-auto* accounts = new BankAccount[accountsCapacity];
+BankAccount *accounts = new BankAccount[accountsCapacity];
 
 
 void customerMenu();
+
 void employeeMenu();
-void roleMenu(unsigned short int &role);
+
+void inputRole(unsigned short int &role);
+
 void bankAction(unsigned int role, unsigned int choice);
+
 void inputChoice(short unsigned int &choice);
 
 int main() {
     unsigned short int role, choice;
     bool run = true;
-    // cin.ignore(100  0, '\n');
     cout << "Welcome to the Bank Simulation Program!" << endl;
-    roleMenu(role);
+    inputRole(role);
 
     while (run) {
-        if (role == CUSTOMER) {
+        if (role == CUSTOMER)
             customerMenu();
-        }
-        else if (role == EMPLOYEE) {
+        else if (role == EMPLOYEE)
             employeeMenu();
-        }
 
         inputChoice(choice);
 
         if (choice == EXIT)
             run = false;
         else if (choice == ROLE_MENU)
-            roleMenu(role);
+            inputRole(role);
         else
             bankAction(role, choice);
     }
@@ -130,9 +147,9 @@ void doubleCapacity() {
     accountsCapacity *= 2;
     auto *temp = new BankAccount[accountsCapacity];
 
-    for (int i = 0; i < numAccounts; i++) {
+    for (int i = 0; i < numAccounts; i++)
         temp[i] = accounts[i];
-    }
+
     delete[] accounts;
     accounts = temp;
     cout << accountsCapacity;
@@ -140,29 +157,20 @@ void doubleCapacity() {
 
 void inputVar(unsigned short int &var, const string &name, const int lowerBound, const int upperBound) {
     cin >> var;
+
     while (var < lowerBound || var > upperBound) {
-        cout << "Invalid " << name <<". Enter a "<< name << " between " << lowerBound << " and " << upperBound << ":";
+        cout << "Invalid " << name << ". Enter a " << name << " between " << lowerBound << " and " << upperBound << ":";
         cin >> var;
     }
 }
+
 void inputVar(unsigned int &var, const string &name, const int lowerBound, const int upperBound) {
     cin >> var;
-    while (var < lowerBound or var > upperBound) {
-        cout << "Invalid " << name <<". Enter a "<< name << " between " << lowerBound << " and " << upperBound << ":";
+
+    while (var < lowerBound || var > upperBound) {
+        cout << "Invalid " << name << ". Enter a " << name << " between " << lowerBound << " and " << upperBound << ":";
         cin >> var;
     }
-}
-
-unsigned int findAccountIndex() {
-    unsigned int accNumber;
-    cout << "Please enter your Account Number:";
-    inputVar(accNumber, "Account Number", MIN_ACCOUNT_NUMBER, MAX_ACCOUNT_NUMBER);
-    cin.ignore();
-    const unsigned int i = accNumber - MIN_ACCOUNT_NUMBER;
-
-    if (!accounts[i].exists()) return -1;
-
-    return i;
 }
 
 void inputChoice(short unsigned int &choice) {
@@ -171,31 +179,58 @@ void inputChoice(short unsigned int &choice) {
     system("cls");
 }
 
-string inputName() {
-    string accountName;
-    cout << "Enter your name (between " << MIN_NAME_LEN << " and " << MAX_NAME_LEN <<" allowed):";
-    cin.ignore();
-    getline(cin, accountName);
-
-    while(accountName.length() < MIN_NAME_LEN || accountName.length() > MAX_NAME_LEN) {
-        cout << "Try again, Name length is not between " << MIN_NAME_LEN << " and " << MAX_NAME_LEN << ":";
-        getline(cin, accountName);
-    }
-    return accountName;
-}
-
-double inputAmount() {
-    double amount;
-    cout << "Please enter amount:";
-    cin >> amount;
-    cin.ignore();
-    return amount;
-}
-
-void roleMenu(unsigned short int &role) {
-    cout << "Enter your role ("<< CUSTOMER <<") for Customer, ("<< EMPLOYEE <<") for Employee:";
+void inputRole(unsigned short int &role) {
+    cout << "Enter your role (" << CUSTOMER << ") for Customer, (" << EMPLOYEE << ") for Employee:";
     inputVar(role, "choice", CUSTOMER, EMPLOYEE);
     system("cls");
+}
+
+
+void inputName(string &name) {
+    cout << "Enter your name (between " << MIN_NAME_LEN << " and " << MAX_NAME_LEN << " allowed):";
+    cin.ignore();
+    getline(cin >> ws, name);
+
+    while (name.length() < MIN_NAME_LEN || name.length() > MAX_NAME_LEN) {
+        cout << "Try again, Name length is not between " << MIN_NAME_LEN << " and " << MAX_NAME_LEN << ":";
+        getline(cin >> ws, name);
+    }
+}
+
+
+void inputStatus(string &status) {
+    cout << "Enter new Status (Active/Frozen):";
+    cin.ignore();
+    getline(cin >> ws, status);
+    while (status != ACTIVE && status != FROZEN) {
+        cout << "Try again, status can either be 'Active' or 'Frozen':";
+        getline(cin >> ws, status);
+    }
+}
+
+void inputAmount(double &amount) {
+    cout << "Please enter amount:";
+    cin.ignore();
+    cin >> amount;
+    while (amount < 0) {
+        cout << "Amount should not be less than 0:";
+        cin >> amount;
+    }
+    cin.ignore();
+}
+
+void inputAccountNumber(unsigned int &accNumber) {
+    cout << "Please enter your Account Number:";
+    inputVar(accNumber, "Account Number", MIN_ACCOUNT_NUMBER, MAX_ACCOUNT_NUMBER);
+}
+
+unsigned int findAccountIndex(const unsigned int accNumber) {
+    const unsigned int i = accNumber - MIN_ACCOUNT_NUMBER;
+
+    if (!accounts[i].exists())
+        return -1;
+
+    return i;
 }
 
 void customerMenu() {
@@ -210,14 +245,19 @@ void customerMenu() {
 }
 
 void openAccount() {
-    if (numAccounts >= accountsCapacity / 2) doubleCapacity();
+    string accountName;
+    if (numAccounts >= accountsCapacity * 3 / 4) doubleCapacity();
     cout << "OPEN ACCOUNT" << endl << endl;
 
-    const string accountName = inputName();
+    inputName(accountName);
     const unsigned int newAccNum = MIN_ACCOUNT_NUMBER + numAccounts;
 
-    accounts[numAccounts].setName(accountName);
-    accounts[numAccounts].setAccountNumber(newAccNum);
+    try {
+        accounts[numAccounts].setName(accountName);
+        accounts[numAccounts].setAccountNumber(newAccNum);
+    } catch (const invalid_argument &e) {
+        cout << e.what();
+    }
 
     numAccounts++;
 
@@ -227,56 +267,76 @@ void openAccount() {
 }
 
 void depositAmount() {
-
+    double amount;
+    unsigned int accNumber = 0;
     cout << "DEPOSIT AMOUNT" << endl << endl;
-    const unsigned int i = findAccountIndex();
+    inputAccountNumber(accNumber);
+    const unsigned int i = findAccountIndex(accNumber);
 
     if (i == -1) {
         cout << "Account does not exist" << endl;
+        cin.ignore();
         return;
     }
 
     if (!accounts[i].isActive()) {
-        cout << "Account is Frozen you cannot deposit funds" << endl;;
+        cout << "Account is Frozen you cannot deposit funds" << endl;
+        cin.ignore();
         return;
     }
 
-    const double amount = inputAmount();
+    inputAmount(amount);
 
-    accounts[i].addBalance(amount);
+    try {
+        accounts[i].deposit(amount);
+    } catch (invalid_argument &e) {
+        cout << e.what();
+    } catch (runtime_error &e) {
+        cout << e.what();
+    }
+
     cout << "Amount Deposited. Current Balance: " << accounts[i].getBalance() << endl;
 }
 
 void withdrawAmount() {
+    double amount;
+    unsigned int accNumber;
     cout << "WITHDRAW AMOUNT" << endl << endl;
-    const unsigned int i = findAccountIndex();
+
+    inputAccountNumber(accNumber);
+    const unsigned int i = findAccountIndex(accNumber);
 
     if (i == -1) {
         cout << "Account does not exist, cannot deposit funds" << endl;
+        cin.ignore();
         return;
     }
 
     if (!accounts[i].isActive()) {
         cout << "Account is Frozen you cannot withdraw Funds" << endl;
+        cin.ignore();
         return;
     }
 
-    const double amount = inputAmount();
+    inputAmount(amount);
 
-    const bool success = accounts[i].subtractBalance(amount);
-    if (!success)
-        cout << "Amount could not be withdrawn";
-    else
-        cout << "Amount Withdrawn. Current Balance: " << accounts[i].getBalance() << endl;
+    try {
+        accounts[i].withdraw(amount);
+    } catch (runtime_error &e) {
+        cout << e.what();
+    } catch (invalid_argument &e) {
+        cout << e.what();
+    }
 }
 
 void generateAccountStatement() {
+    string accountName;
     bool found = false;
 
     cout << "GENERATE ACCOUNT STATEMENT" << endl << endl;
-    const string accountName = inputName();
+    inputName(accountName);
 
-    for (int i=0; i<numAccounts; i++) {
+    for (int i = 0; i < numAccounts; i++) {
         if (accounts[i].getName() == accountName) {
             accounts[i].print();
             found = true;
@@ -298,53 +358,72 @@ void employeeMenu() {
 
 void viewAllAccounts() {
     cout << "VIEW ALL ACCOUNTS" << endl << endl;
-    for (int i=0; i<numAccounts; i++) {
+    for (int i = 0; i < numAccounts; i++)
         accounts[i].print();
-    }
 
+    cin.ignore();
 }
 
 void deductTax() {
     cout << "DEDUCT TAX" << endl << endl;
 
     unsigned int count = 0;
-    for (int i=0; i<numAccounts; i++) {
+    for (int i = 0; i < numAccounts; i++) {
         if (accounts[i].isActive()) {
-            accounts[i].subtractBalance(accounts[i].getBalance() * TAX);
+            accounts[i].withdraw(accounts[i].getBalance() * TAX);
             count++;
         }
     }
     cout << "Tax Deducted from " << count << " account(s)" << endl;
+    cin.ignore();
 }
 
 void addBonus() {
     cout << "ADD BONUS" << endl << endl;
     unsigned int count = 0;
-    for (int i=0; i<numAccounts; i++) {
+    for (int i = 0; i < numAccounts; i++) {
         if (accounts[i].isActive()) {
-            accounts[i].addBalance(accounts[i].getBalance() * BONUS);
+            accounts[i].deposit(accounts[i].getBalance() * BONUS);
             count++;
         }
     }
     cout << "Bonus Added to " << count << " account(s)" << endl;
+    cin.ignore();
 }
 
+
 void changeAccountStatus() {
+    string status;
+    unsigned int accNumber;
     cout << "CHANGE ACCOUNT STATUS" << endl << endl;
-    const unsigned int i = findAccountIndex();
+
+    inputAccountNumber(accNumber);
+    const unsigned int i = findAccountIndex(accNumber);
+
     if (i == -1) {
         cout << "Account does not exist, cannot change status" << endl;
+        cin.ignore();
         return;
     }
 
-    if (!accounts[i].changeAccountStatus()) cout << "Account status could not be changed";
-    else cout << "Account Status Changed to " << accounts[i].getStatus() << endl;
+    inputStatus(status);
+
+    try {
+        accounts[i].setAccountStatus(status);
+        cout << "Account Status Changed to " << status << endl;
+    } catch (const invalid_argument &e) {
+        cout << e.what() << endl;
+    }
 }
 
 void customerAction(const unsigned int choice) {
-    if (choice ==  1) openAccount();
+    if (choice == 1) openAccount();
     else {
-        if (numAccounts == 0) cout << "You must open an account first..." << endl;
+        if (numAccounts == 0) {
+            cout << "You must open an account first..." << endl;
+            cin.ignore();
+            return;
+        }
         switch (choice) {
             case 2:
                 depositAmount();
@@ -362,9 +441,9 @@ void customerAction(const unsigned int choice) {
 }
 
 void employeeActions(const unsigned int choice) {
-    cin.ignore();
     if (numAccounts == 0) {
         cout << "No Accounts were found..." << endl;
+        cin.ignore();
         return;
     }
     switch (choice) {
@@ -391,7 +470,7 @@ void bankAction(const unsigned int role, const unsigned int choice) {
     else if (role == EMPLOYEE)
         employeeActions(choice);
 
-    if (choice != ROLE_MENU){
+    if (choice != ROLE_MENU) {
         cout << endl;
         cout << "PRESS ENTER TO CONTINUE";
         cin.get();
